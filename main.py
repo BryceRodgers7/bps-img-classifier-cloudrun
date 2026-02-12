@@ -6,6 +6,7 @@ Provides a REST API for image classification running on Google Cloud Run.
 
 import os
 import io
+from pathlib import Path
 from contextlib import asynccontextmanager
 from typing import Dict, Any
 
@@ -14,6 +15,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 import uvicorn
+from google.cloud import storage
 
 from classifier import BirdPlaneSupermanClassifier
 
@@ -22,19 +24,67 @@ from classifier import BirdPlaneSupermanClassifier
 classifier = None
 
 
+def download_model_from_gcs(bucket_name: str, source_blob_name: str, destination_path: str):
+    """
+    Download model file from Google Cloud Storage if it doesn't exist locally
+    
+    Args:
+        bucket_name: GCS bucket name
+        source_blob_name: Path to the model file in the bucket
+        destination_path: Local path where the model should be saved
+    """
+    # Check if file already exists
+    if os.path.exists(destination_path):
+        file_size = os.path.getsize(destination_path)
+        print(f"Model file already exists at {destination_path} ({file_size / (1024*1024):.1f} MB)")
+        return
+    
+    print(f"Model file not found locally. Downloading from gs://{bucket_name}/{source_blob_name}...")
+    
+    try:
+        # Create directory if it doesn't exist
+        os.makedirs(os.path.dirname(destination_path), exist_ok=True)
+        
+        # Initialize GCS client
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(bucket_name)
+        blob = bucket.blob(source_blob_name)
+        
+        # Download the file
+        blob.download_to_filename(destination_path)
+        
+        file_size = os.path.getsize(destination_path)
+        print(f"Model downloaded successfully! ({file_size / (1024*1024):.1f} MB)")
+        
+    except Exception as e:
+        print(f"Failed to download model from GCS: {e}")
+        raise
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load model on startup and cleanup on shutdown"""
     global classifier
     
-    # Startup: Load the model
-    print("Loading classifier model...")
-    model_path = "best_model.pth"
+    # Configuration
+    bucket_name = os.getenv("GCS_BUCKET_NAME", "bps-model")
+    model_blob_name = os.getenv("GCS_MODEL_PATH", "best_model.pth")
+    model_local_path = "models/best_model.pth"
     confidence_threshold = float(os.getenv("CONFIDENCE_THRESHOLD", "0.7"))
     
+    # Download model from GCS if needed
+    print("Checking for model file...")
+    try:
+        download_model_from_gcs(bucket_name, model_blob_name, model_local_path)
+    except Exception as e:
+        print(f"Failed to download model: {e}")
+        raise
+    
+    # Load the classifier
+    print("Loading classifier model...")
     try:
         classifier = BirdPlaneSupermanClassifier(
-            model_path=model_path,
+            model_path=model_local_path,
             confidence_threshold=confidence_threshold
         )
         print("Model loaded successfully!")

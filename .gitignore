@@ -33,6 +33,9 @@ secrets.toml
 # Model files
 *.pth
 
+# Downloaded models directory
+models/
+
 # Database files
 *.db
 *.sqlite

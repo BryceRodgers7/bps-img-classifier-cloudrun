@@ -8,11 +8,21 @@ A FastAPI-based image classification service for identifying birds, planes, supe
 .
 ├── main.py              # FastAPI application with /predict endpoint
 ├── classifier.py        # Image classifier implementation
-├── best_model.pth       # Trained model weights
+├── models/              # Directory for downloaded model files
+│   └── best_model.pth   # Trained model weights (downloaded from GCS)
 ├── requirements.txt     # Python dependencies
 ├── Dockerfile          # Docker configuration for Cloud Run
 └── .dockerignore       # Files to exclude from Docker build
 ```
+
+## Model Management
+
+The application automatically downloads the model file from Google Cloud Storage on startup:
+- **Bucket**: `bps-model` (configurable via `GCS_BUCKET_NAME` env var)
+- **Model file**: `best_model.pth` (configurable via `GCS_MODEL_PATH` env var)
+- **Local path**: `models/best_model.pth`
+
+The model is downloaded only if it doesn't already exist locally, making it efficient for container restarts.
 
 ## API Endpoints
 
@@ -128,6 +138,22 @@ curl -X POST -F "file=@test_image.jpg" http://localhost:8080/predict
 - Google Cloud SDK installed and configured
 - Project ID set up in Google Cloud Platform
 - Cloud Run API enabled
+- Model file uploaded to GCS bucket `bps-model`
+
+### Upload Model to Google Cloud Storage
+
+If you haven't already uploaded your model:
+
+```bash
+# Create the bucket (if it doesn't exist)
+gsutil mb gs://bps-model
+
+# Upload the model file
+gsutil cp best_model.pth gs://bps-model/best_model.pth
+
+# Verify upload
+gsutil ls -lh gs://bps-model/
+```
 
 ### Deploy to Cloud Run
 
@@ -147,6 +173,8 @@ gcloud run deploy bird-classifier \
   --timeout 300s
 ```
 
+**Note**: Cloud Run will automatically have access to your GCS bucket if the service account has the necessary permissions. The default Cloud Run service account typically has Storage Object Viewer role.
+
 3. **Get the service URL:**
 ```bash
 gcloud run services describe bird-classifier --region us-central1 --format 'value(status.url)'
@@ -158,12 +186,14 @@ The following environment variables can be configured:
 
 - `PORT` - Server port (default: 8080, automatically set by Cloud Run)
 - `CONFIDENCE_THRESHOLD` - Minimum confidence for predictions (default: 0.7)
+- `GCS_BUCKET_NAME` - GCS bucket name for model storage (default: bps-model)
+- `GCS_MODEL_PATH` - Path to model file in bucket (default: best_model.pth)
 
 To set environment variables on Cloud Run:
 ```bash
 gcloud run services update bird-classifier \
   --region us-central1 \
-  --set-env-vars CONFIDENCE_THRESHOLD=0.8
+  --set-env-vars CONFIDENCE_THRESHOLD=0.8,GCS_BUCKET_NAME=my-custom-bucket
 ```
 
 ## Model Information
