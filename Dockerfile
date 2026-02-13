@@ -29,7 +29,7 @@ EXPOSE 8080
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8080
 ENV GCS_BUCKET_NAME=bps-model
-ENV GCS_MODEL_PATH=best_model.pth
+ENV GCS_MODEL_PATH=models/best-model.pth
 
 # Run the application with uvicorn
 CMD exec uvicorn main:app --host 0.0.0.0 --port ${PORT}
