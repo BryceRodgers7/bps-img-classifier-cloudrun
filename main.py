@@ -68,8 +68,8 @@ async def lifespan(app: FastAPI):
     
     # Configuration
     bucket_name = os.getenv("GCS_BUCKET_NAME", "bps-model")
-    model_blob_name = os.getenv("GCS_MODEL_PATH", "models/best-model.pth")
-    model_local_path = "models/best-model.pth"
+    model_blob_name = os.getenv("GCS_MODEL_PATH", "models/best_model.pth")
+    model_local_path = "models/best_model.pth"
     confidence_threshold = float(os.getenv("CONFIDENCE_THRESHOLD", "0.7"))
     
     # Download model from GCS if needed
