@@ -1,0 +1,21 @@
+{
+  "temperature": 1.6014595031738281,
+  "calibration_date": "2026-03-03T18:06:55.802969",
+  "model_path": "models/best_model.pth",
+  "dataset_dir": "dataset",
+  "num_val_samples": 2725,
+  "classes": [
+    "bird",
+    "plane",
+    "superman",
+    "other"
+  ],
+  "metrics": {
+    "nll_before": 0.10937773436307907,
+    "nll_after": 0.09243036806583405,
+    "ece_before": 0.01073047798126936,
+    "ece_after": 0.007106296718120575,
+    "nll_delta": -0.016947366297245026,
+    "ece_delta": -0.0036241812631487846
+  }
+}

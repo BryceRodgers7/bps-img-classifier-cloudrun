@@ -34,7 +34,7 @@ secrets.toml
 *.pth
 
 # Downloaded models directory
-models/
+models/best_model.pth
 
 # Database files
 *.db
