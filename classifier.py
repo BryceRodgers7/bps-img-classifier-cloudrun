@@ -205,17 +205,22 @@ class BirdPlaneSupermanClassifier:
 
         return pred_class, confidence, all_probs
     
-    def predict_from_image(self, image: Image.Image) -> Tuple[str, float, Dict[str, float]]:
+    def predict_from_image(self, image: Image.Image) -> Dict:
         """
         Predict class for a PIL Image object (for in-memory processing)
-        
+
         Args:
             image: PIL Image object
-            
+
         Returns:
-            pred_class: Predicted class name
-            confidence: Confidence score (0-1) for the predicted class
-            all_probs: Dictionary of {class_name: probability} for all classes
+            Dictionary containing:
+                predicted_class: Predicted class name (may be 'other' if below threshold)
+                confidence: Calibrated confidence score (0-1) for the predicted class
+                top_class: Highest-probability class name (before threshold override)
+                top_prob: Highest raw probability (rounded to 4 dp)
+                confidence_threshold: Threshold used for this prediction
+                all_probs: Dict of {class_name: probability} for all classes (rounded to 4 dp)
+                threshold_applied: True if low confidence caused a fallback to 'other'
         """
         # Preprocess image
         image_tensor = self._preprocess_pil_image(image).to(self.device)
@@ -229,23 +234,25 @@ class BirdPlaneSupermanClassifier:
         max_prob, pred_idx = torch.max(probabilities, 0)
         max_prob = max_prob.item()
         pred_idx = pred_idx.item()
-        
-        # Apply confidence thresholding
-        if max_prob < self.confidence_threshold:
-            # Low confidence → predict 'other'
-            pred_class = 'other'
-            confidence = max_prob  # Keep original confidence for transparency
-        else:
-            pred_class = self.classes[pred_idx]
-            confidence = max_prob
-        
-        # Create probability dictionary
+    
+        threshold_applied = max_prob < self.confidence_threshold
+        pred_class = "other" if threshold_applied else self.classes[pred_idx]
+        confidence = max_prob
+
         all_probs = {
-            self.classes[i]: float(probabilities[i].item())
+            self.classes[i]: round(float(probabilities[i].item()), 4)
             for i in range(len(self.classes))
         }
-        
-        return pred_class, confidence, all_probs
+
+        return {
+            "predicted_class": pred_class,
+            "confidence": round(confidence, 4),
+            "top_class": self.classes[pred_idx],
+            "top_prob": round(max_prob, 4),
+            "confidence_threshold": self.confidence_threshold,
+            "all_probs": all_probs,
+            "threshold_applied": threshold_applied,
+        }
     
     def predict_batch(
         self,

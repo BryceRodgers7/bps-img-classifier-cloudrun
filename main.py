@@ -222,18 +222,7 @@ async def predict(file: UploadFile = File(...)) -> Dict[str, Any]:
     
     # Run prediction
     try:
-        pred_class, confidence, probabilities = classifier.predict_from_image(image)
-        
-        # Determine if threshold was applied
-        max_prob = max(probabilities.values())
-        threshold_applied = max_prob < classifier.confidence_threshold and pred_class == 'other'
-        
-        return {
-            "predicted_class": pred_class,
-            "confidence": round(confidence, 4),
-            "probabilities": {k: round(v, 4) for k, v in probabilities.items()},
-            "threshold_applied": threshold_applied
-        }
+        return classifier.predict_from_image(image)
         
     except Exception as e:
         raise HTTPException(
