@@ -8,7 +8,7 @@ Usage:
     from classifier import BirdPlaneSupermanClassifier
     
     # Load model (temperature calibration applied automatically if temperature.json exists)
-    classifier = BirdPlaneSupermanClassifier('models/best_model.pth', confidence_threshold=0.7)
+    classifier = BirdPlaneSupermanClassifier('models/best_model.pth', confidence_threshold=0.85)
     
     # Single prediction
     pred_class, confidence, probs = classifier.predict('test_image.jpg')
@@ -49,7 +49,7 @@ class BirdPlaneSupermanClassifier:
 
     Args:
         model_path: Path to the trained model (.pth file)
-        confidence_threshold: Minimum confidence to predict main classes (default: 0.7)
+        confidence_threshold: Minimum confidence to predict main classes (default: 0.85)
                              If max probability < threshold, predicts 'other'
         device: Device to run on ('cuda' or 'cpu', default: auto-detect)
         temperature_path: Path to temperature.json produced by calibrate_temperature.py.
@@ -60,7 +60,7 @@ class BirdPlaneSupermanClassifier:
     def __init__(
         self,
         model_path: str,
-        confidence_threshold: float = 0.7,
+        confidence_threshold: float = 0.85,
         device: Optional[str] = None,
         temperature_path: Optional[Union[str, bool]] = None,
     ):
@@ -347,7 +347,7 @@ def demo():
     
     # Load classifier
     print(f"Loading model from {model_path}...")
-    classifier = BirdPlaneSupermanClassifier(model_path, confidence_threshold=0.7)
+    classifier = BirdPlaneSupermanClassifier(model_path, confidence_threshold=0.85)
     
     # Get image paths
     if input_path.is_file():
