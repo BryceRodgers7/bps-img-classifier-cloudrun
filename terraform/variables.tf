@@ -39,7 +39,7 @@ variable "max_instance_count" {
 
 variable "container_concurrency" {
   type    = number
-  default = 80
+  default = 1
 }
 
 variable "timeout" {
