@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: classifier-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: classifier-api
+  template:
+    metadata:
+      labels:
+        app: classifier-api
+    spec:
+      containers:
+        - name: classifier-api
+          image: placeholder
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: PORT
+              value: "8080"
+            - name: GCS_BUCKET_NAME
+              value: "bps-model"
+            - name: GCS_MODEL_PATH
+              value: "models/best_model.pth"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3

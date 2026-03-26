@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: classifier-api
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: classifier-api
+          image: bps-classifier-api:local
+          imagePullPolicy: Never
+          env:
+            - name: GOOGLE_CLOUD_PROJECT
+              value: "stoked-monitor-375412"
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "/root/.config/gcloud/application_default_credentials.json"
+          volumeMounts:
+            - name: gcp-adc-volume
+              mountPath: /root/.config/gcloud
+              readOnly: true
+      volumes:
+        - name: gcp-adc-volume
+          secret:
+            secretName: gcp-adc

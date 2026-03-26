@@ -63,3 +63,6 @@ Thumbs.db
 terraform.tfstate
 terraform.tfstate.*
 crash.log
+
+# kubernetes secrets file for local deployment
+k8s/overlays/local/secret-gcp-adc.yaml
