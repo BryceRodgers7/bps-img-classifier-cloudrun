@@ -1,0 +1,60 @@
+flowchart TB
+
+    USER["User / Browser"]
+
+    subgraph FE["Front-End"]
+        STREAMLIT["Streamlit App on Fly.io"]
+    end
+
+    subgraph LOCAL["Local Kubernetes (Minikube)"]
+        INGRESS_LOCAL["kubectl port-forward / local access"]
+
+        subgraph K8S["Kubernetes Resources"]
+            SVC["Service: classifier-api"]
+            DEPLOY["Deployment: classifier-api"]
+            HPA["HPA (planned for GKE, optional locally)"]
+        end
+
+        subgraph PODS["Classifier API Pods"]
+            POD1["Pod 1
+FastAPI container
+/health
+/predict"]
+            POD2["Pod 2
+FastAPI container
+/health
+/predict"]
+        end
+
+        SECRET["Kubernetes Secret
+gcp-adc"]
+        VOL["Mounted credentials volume
+/root/.config/gcloud"]
+    end
+
+    subgraph GCP["Google Cloud"]
+        GCS["Google Cloud Storage
+bps-model / models/best_model.pth"]
+        GKE["Future: GKE production cluster"]
+        AR["Future: Artifact Registry"]
+        WI["Future: Workload Identity"]
+    end
+
+    USER --> STREAMLIT
+    STREAMLIT -->|HTTP request with image| INGRESS_LOCAL
+    INGRESS_LOCAL --> SVC
+    SVC --> DEPLOY
+    DEPLOY --> POD1
+    DEPLOY --> POD2
+    HPA -. scales replicas .-> DEPLOY
+
+    SECRET --> VOL
+    VOL --> POD1
+    VOL --> POD2
+
+    POD1 -->|download model at startup| GCS
+    POD2 -->|download model at startup| GCS
+
+    AR -. future production image source .-> GKE
+    WI -. future production auth .-> GKE
+    GKE -. future production replacement for local Minikube .-> DEPLOY

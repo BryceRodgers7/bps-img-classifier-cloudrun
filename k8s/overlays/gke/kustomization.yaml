@@ -1,0 +1,10 @@
+# k8s/overlays/gke/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+  - hpa.yaml
+
+patchesStrategicMerge:
+  - patch-deployment-gke.yaml

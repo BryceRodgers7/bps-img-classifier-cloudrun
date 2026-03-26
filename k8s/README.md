@@ -1,3 +1,177 @@
+## Kubernetes Deployment
+
+This project uses Kubernetes to run and scale the classifier API. The configuration is structured using Kustomize to separate environment-agnostic resources from environment-specific overrides.
+
+### Structure
+
+```
+k8s/
+  base/
+    deployment.yaml
+    service.yaml
+  overlays/
+    local/
+    gke/
+```
+
+* **base/**
+  Contains shared Kubernetes resources that are environment-independent:
+
+  * Deployment
+  * Service
+  * Health probes
+  * Core environment variables
+
+* **overlays/local/**
+  Local development configuration for Minikube:
+
+  * Uses locally built Docker image (`bps-classifier-api:local`)
+  * Sets `imagePullPolicy: Never`
+  * Injects GCP credentials via a Kubernetes Secret
+  * Mounts credentials into the container for model download from GCS
+
+* **overlays/gke/**
+  Production configuration for Google Kubernetes Engine (GKE):
+
+  * Uses Artifact Registry image
+  * Enables Horizontal Pod Autoscaling (HPA)
+  * Removes local credential mounts
+  * Designed to use Workload Identity instead of credential files
+
+---
+
+## Local Development (Minikube)
+
+### Prerequisites
+
+* Docker Desktop
+* kubectl
+* Minikube
+* GCP SDK (`gcloud`) authenticated locally
+
+### Create GCP Credentials Secret
+
+This project requires access to a model stored in Google Cloud Storage.
+
+Create the Kubernetes secret from your local ADC credentials:
+
+```
+kubectl create secret generic gcp-adc \
+  --from-file=application_default_credentials.json="C:\Users\<your-user>\AppData\Roaming\gcloud\application_default_credentials.json"
+```
+
+> Note: This secret is **not committed to the repository** and must be created locally.
+
+---
+
+### Build and Load Image into Minikube
+
+```
+docker build -t bps-classifier-api:local .
+minikube image load bps-classifier-api:local
+```
+
+---
+
+### Deploy to Kubernetes
+
+```
+kubectl apply -k k8s/overlays/local
+```
+
+---
+
+### Test the Service
+
+```
+kubectl port-forward service/classifier-api 8080:8080
+```
+
+Then in another terminal:
+
+```
+curl http://localhost:8080/health
+```
+
+```
+curl -X POST "http://localhost:8080/predict" -F "file=@test-image.jpg"
+```
+
+---
+
+## Scaling
+
+The classifier API supports horizontal scaling:
+
+* Local: manually set replica count in overlay
+* GKE: uses Horizontal Pod Autoscaler (HPA)
+
+Example:
+
+```
+kubectl get pods
+```
+
+Multiple pods will be created and managed automatically.
+
+---
+
+## Model Loading
+
+The classifier loads a trained model from Google Cloud Storage at startup.
+
+* Bucket: `bps-model`
+* Path: `models/best_model.pth`
+
+### Local (Minikube)
+
+* Uses mounted ADC credentials via Kubernetes Secret
+* Model is downloaded at container startup
+
+### Production (GKE – planned)
+
+* Will use Workload Identity (no credential files)
+* Model download handled via init container
+* Model stored in versioned path in GCS
+
+---
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## Architecture Overview
 
 - Frontend: Streamlit app hosted on Fly.io
