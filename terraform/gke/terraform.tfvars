@@ -5,4 +5,4 @@ node_pool_name = "primary-node-pool"
 node_count   = 1
 machine_type = "e2-standard-2"
 disk_size_gb = 50
-environment  = "dev"
+environment  = "prod"
