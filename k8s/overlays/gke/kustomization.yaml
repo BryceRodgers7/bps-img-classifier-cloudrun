@@ -5,6 +5,8 @@ kind: Kustomization
 resources:
   - ../../base
   - hpa.yaml
+  - serviceaccount.yaml
 
 patchesStrategicMerge:
   - patch-deployment-gke.yaml
+  
