@@ -1,0 +1,16 @@
+project_id            = "stoked-monitor-375412"
+region                = "us-central1"
+service_name          = "bps-classifier"
+container_image       = "us-central1-docker.pkg.dev/stoked-monitor-375412/cloud-run-source-deploy/bps-img-classifier-cloudrun/bps-classifier:d62c20c1e063660ef6e0e9d372353d1a13d06f1d"
+service_account_email = "bps-svc-acct@stoked-monitor-375412.iam.gserviceaccount.com"
+
+min_instance_count    = 1
+max_instance_count    = 20
+container_concurrency = 1
+timeout               = "300s"
+container_port        = 8080
+cpu_limit             = "1"
+memory_limit          = "2Gi"
+
+deletion_protection   = true
+allow_public_access   = true

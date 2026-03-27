@@ -6,6 +6,7 @@ resources:
   - ../../base
   - hpa.yaml
   - serviceaccount.yaml
+  - ingress.yaml
 
 patchesStrategicMerge:
   - patch-deployment-gke.yaml

@@ -1,0 +1,13 @@
+# k8s/overlays/gke/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: classifier-api-ingress
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+spec:
+  defaultBackend:
+    service:
+      name: classifier-api
+      port:
+        number: 8080

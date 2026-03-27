@@ -26,7 +26,7 @@ wheels/
 # Environment variables
 .env
 .env.local
-*.example
+.example
 *.secret*
 secrets.toml
 
@@ -63,6 +63,7 @@ Thumbs.db
 terraform.tfstate
 terraform.tfstate.*
 crash.log
+*.tfvars
 
 # kubernetes secrets file for local deployment
 k8s/overlays/local/secret-gcp-adc.yaml
