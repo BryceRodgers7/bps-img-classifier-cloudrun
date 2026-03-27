@@ -9,13 +9,13 @@ flowchart TB
     subgraph LOCAL["Local Kubernetes (Minikube)"]
         INGRESS_LOCAL["kubectl port-forward / local access"]
 
-        subgraph K8S["Kubernetes Resources"]
-            SVC["Service: classifier-api"]
-            DEPLOY["Deployment: classifier-api"]
-            HPA["HPA (planned for GKE, optional locally)"]
+        subgraph K8S_LOCAL["Kubernetes Resources"]
+            SVC_LOCAL["Service: classifier-api"]
+            DEPLOY_LOCAL["Deployment: classifier-api"]
+            HPA_LOCAL["HPA (optional locally, enabled in GKE)"]
         end
 
-        subgraph PODS["Classifier API Pods"]
+        subgraph PODS_LOCAL["Classifier API Pods"]
             POD1["Pod 1
 FastAPI container
 /health
@@ -33,20 +33,51 @@ gcp-adc"]
     end
 
     subgraph GCP["Google Cloud"]
+        subgraph GKE["GKE Production Cluster"]
+            INGRESS_GKE["Ingress
+External HTTP Load Balancer"]
+
+            subgraph K8S_GKE["Kubernetes Resources"]
+                SVC_GKE["Service: classifier-api"]
+                DEPLOY_GKE["Deployment: classifier-api"]
+                HPA_GKE["Horizontal Pod Autoscaler"]
+                SA["Kubernetes Service Account
+classifier-api-sa"]
+            end
+
+            subgraph PODS_GKE["Classifier API Pods"]
+                GPOD1["Pod 1
+FastAPI container
+/health
+/predict"]
+                GPOD2["Pod 2
+FastAPI container
+/health
+/predict"]
+            end
+        end
+
         GCS["Google Cloud Storage
 bps-model / models/best_model.pth"]
-        GKE["Future: GKE production cluster"]
-        AR["Future: Artifact Registry"]
-        WI["Future: Workload Identity"]
+        GSA["Google Service Account
+classifier-workload-sa"]
+        WI["Workload Identity"]
+        AR["Artifact Registry
+bps-classifier-api:prod"]
+        TF["Terraform
+GKE cluster + node pool + IAM"]
+        CR["Cloud Run
+Current production deployment"]
     end
 
     USER --> STREAMLIT
-    STREAMLIT -->|HTTP request with image| INGRESS_LOCAL
-    INGRESS_LOCAL --> SVC
-    SVC --> DEPLOY
-    DEPLOY --> POD1
-    DEPLOY --> POD2
-    HPA -. scales replicas .-> DEPLOY
+
+    STREAMLIT -->|Local testing| INGRESS_LOCAL
+    INGRESS_LOCAL --> SVC_LOCAL
+    SVC_LOCAL --> DEPLOY_LOCAL
+    DEPLOY_LOCAL --> POD1
+    DEPLOY_LOCAL --> POD2
+    HPA_LOCAL -. scales replicas .-> DEPLOY_LOCAL
 
     SECRET --> VOL
     VOL --> POD1
@@ -55,6 +86,20 @@ bps-model / models/best_model.pth"]
     POD1 -->|download model at startup| GCS
     POD2 -->|download model at startup| GCS
 
-    AR -. future production image source .-> GKE
-    WI -. future production auth .-> GKE
-    GKE -. future production replacement for local Minikube .-> DEPLOY
+    STREAMLIT -->|Current production path| CR
+
+    STREAMLIT -. optional test path .-> INGRESS_GKE
+    INGRESS_GKE --> SVC_GKE
+    SVC_GKE --> DEPLOY_GKE
+    DEPLOY_GKE --> GPOD1
+    DEPLOY_GKE --> GPOD2
+    HPA_GKE -. scales replicas .-> DEPLOY_GKE
+
+    SA --> GPOD1
+    SA --> GPOD2
+    WI --> SA
+    WI --> GSA
+    GSA -->|roles/storage.objectViewer| GCS
+
+    AR -->|pull image| GKE
+    TF -. provisions .-> GKE
